@@ -1,0 +1,47 @@
+<html>
+<head>
+<script src="encoder.js"></script>
+</head>
+
+<body>
+<canvas id="pixelsCanvas" width="352" height="288" style="border:1px solid #d3d3d3;">
+This text is displayed if your browser does not support HTML5 Canvas.
+</canvas>
+<div id="fileHolder"/>
+
+<script language=JavaScript>
+var fileHolder = document.getElementById('fileHolder');
+// Check for the various File API support.
+if (fileHolder) {
+  if (window.File &&
+      window.FileReader &&
+      window.FileList &&
+      window.Blob) {
+    fileHolder.innerHTML = '<input type="file" id="fileSelector" name="video_source" />';
+
+  } else {
+    fileHolder.style['display'] = 'block';
+    fileHolder.innerHTML = '<p>Browser Does Not Support HTML5 File API</p>';
+  }
+}
+
+canvas = document.getElementById("pixelsCanvas");
+canvasContext = canvas.getContext("2d");
+
+
+function handleFileSelect(evt) {
+  var files = evt.target.files;
+  for (var i = 0; i < files.length; i++) {
+	// pass to pixels library
+  	decode(files[i], canvasContext);
+	//render(imageData.data, imageData.width, imageData.height);
+  }
+}
+
+document.getElementById('fileSelector').addEventListener('change',
+handleFileSelect, false);
+
+</script>
+
+</body>
+</html>
