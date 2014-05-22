@@ -1,3 +1,6 @@
+Sources:
+http://trace.eas.asu.edu/yuv/
+
 1. test redrawing on canvas (onmouseclick?)
 onmouseclick=updateImage;
 updateImage = function() {

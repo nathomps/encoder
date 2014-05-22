@@ -18,6 +18,16 @@ var Decoder = function Decoder() {
     }
   }
 
+  function yuvToRGB() {
+/*
+size.total = size.width * size.height;
+y = yuv[position.y * size.width + position.x];
+u = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total];
+v = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total + (size.total / 4)];
+rgb = Y'UV444toRGB888(y, u, v);
+*/
+  }
+
   function startIndex(x, y, width, height) {
     return (x + (y * width)) * 4;
   }
