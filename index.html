@@ -4,12 +4,16 @@
 </head>
 
 <body>
-<canvas id="pixelsCanvas" width="352" height="288" style="border:1px solid #d3d3d3;">
-This text is displayed if your browser does not support HTML5 Canvas.
-</canvas>
-<div id="fileHolder"/>
+<div id="canvas"></div>
+<div id="fileHolder"></div>
 
 <script language=JavaScript>
+var decoder = new Decoder();
+var canvas = document.getElementById('canvas');
+if (canvas) {
+  canvas.innerHTML="<canvas id='pixelsCanvas' width='"+decoder.decoderFrameWidth+"' height='"+decoder.decoderFrameHeight+"' style='border:1px solid #d3d3d3;'>Your browser does not support HTML5 Canvas.</canvas>";
+}
+
 var fileHolder = document.getElementById('fileHolder');
 // Check for the various File API support.
 if (fileHolder) {
@@ -25,21 +29,36 @@ if (fileHolder) {
   }
 }
 
-canvas = document.getElementById("pixelsCanvas");
-canvasContext = canvas.getContext("2d");
-
-
-function handleFileSelect(evt) {
-  var files = evt.target.files;
-  for (var i = 0; i < files.length; i++) {
-	// pass to pixels library
-  	decode(files[i], canvasContext);
-	//render(imageData.data, imageData.width, imageData.height);
+function copyFromDecoder(myCanvasContext, myDecoder) {
+  var imageData = myCanvasContext.createImageData(myDecoder.decoderFrameWidth, myDecoder.decoderFrameHeight);
+  console.log("0",myDecoder.decoderRgbaArray[0]);
+  console.log("1",myDecoder.decoderRgbaArray[1]);
+  console.log("2",myDecoder.decoderRgbaArray[2]);
+  console.log("3",myDecoder.decoderRgbaArray[3]);
+  for (var i = 0; i < myDecoder.decoderRgbaArray.length; i++) {
+    imageData.data[i] = myDecoder.decoderRgbaArray[i];
   }
+  myCanvasContext.putImageData(imageData, 0, 0);
 }
 
-document.getElementById('fileSelector').addEventListener('change',
-handleFileSelect, false);
+var canvas = document.getElementById("pixelsCanvas");
+var canvasContext = canvas.getContext("2d");
+copyFromDecoder(canvasContext, decoder);
+
+var handleFileSelect = function() {
+    var localContext = canvasContext;
+    var localDecoder = decoder;
+
+  return function(evt) {
+    var files = evt.target.files;
+    for (var i = 0; i < files.length; i++) {
+    	localDecoder.decode(files[i]);
+      copyFromDecoder(localContext, localDecoder);
+    }
+  }
+}();
+
+document.getElementById('fileSelector').addEventListener('change', handleFileSelect, false);
 
 </script>
 
