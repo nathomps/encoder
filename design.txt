@@ -1,0 +1,38 @@
+1. test redrawing on canvas (onmouseclick?)
+onmouseclick=updateImage;
+updateImage = function() {
+var localCanvas = canvas;
+var counter = 0;
+return function(evt) {
+counter++;
+offset = counter % 3;
+for (i = 0; i < size; i += 4) {
+array[i] = 0;
+array[i + 1] = 0;
+array[i + 2] = 0;
+array[i + offset] = 255;
+}
+canvas.paint(array);
+}
+}();
+
+2. test reading bytes from file
+fileSelector.onloadend = handleFile();
+
+function handleSpliceDone() {
+// this should be the fileReader that finished
+this.result.length == 16;
+}
+
+handleFile() {
+var blob = files[0].slice(0, 16);
+// callback when task finishes
+fileReader.onloadend = handleSpliceDone();
+fileReader.read(blob);
+}
+
+3. test decoding 
+in node.js:
+write bytes directly, even statically create a test yuv data.
+convertToRGBA()
+verify rgba array is as expected
