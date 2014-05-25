@@ -1,5 +1,6 @@
 Sources:
 http://trace.eas.asu.edu/yuv/
+http://msdn.microsoft.com/en-us/library/windows/desktop/dd206750(v=vs.85).aspx
 
 1. test redrawing on canvas (onmouseclick?)
 onmouseclick=updateImage;
