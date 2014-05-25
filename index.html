@@ -58,6 +58,32 @@ var handleFileSelect = function() {
   }
 }();
 
+var handleMouseUp = function(canvasContext, decoder) {
+  var localContext = canvasContext;
+  var width = decoder.decoderFrameWidth;
+  var height = decoder.decoderFrameHeight;
+  var color = 0;
+  return function (evt) {
+    var imageData = localContext.createImageData(width, height);
+    for (var x = 0; x < width; x++) {
+      for (var y = 0; y < height; y++) {
+        var index = decoder.rgbaStartIndex(x, y, width, height);
+        //var index = (x + (y * width)) * 4;
+        imageData.data[index + 0] = 0;
+        imageData.data[index + 1] = 0;
+        imageData.data[index + 2] = 0;
+        imageData.data[index + 3] = 255;
+        imageData.data[index + (color % 3)] = 255;
+      }
+    }
+    console.log("mouse up");
+    color++;
+    localContext.putImageData(imageData, 0, 0);
+  }
+}(canvasContext, decoder);
+
+document.onmouseup = handleMouseUp;
+
 document.getElementById('fileSelector').addEventListener('change', handleFileSelect, false);
 
 </script>

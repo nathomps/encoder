@@ -6,7 +6,7 @@ var Decoder = function Decoder() {
   this.decoderRgbaArray = new Array(this.decoderFrameWidth * this.decoderFrameHeight * 4);
   for (x = 0; x < this.decoderFrameWidth; x++) {
     for (y = 0; y < this.decoderFrameHeight; y++) {
-      index = startIndex(x, y, this.decoderFrameWidth, this.decoderFrameHeight);
+      index = this.rgbaStartIndex(x, y, this.decoderFrameWidth, this.decoderFrameHeight);
       total = this.decoderFrameWidth * this.decoderFrameHeight * 4;
       this.decoderRgbaArray[index] = 255;
       // green
@@ -26,10 +26,6 @@ u = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total];
 v = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total + (size.total / 4)];
 rgb = Y'UV444toRGB888(y, u, v);
 */
-  }
-
-  function startIndex(x, y, width, height) {
-    return (x + (y * width)) * 4;
   }
 
   this.decode = function(file) {
@@ -60,7 +56,7 @@ rgb = Y'UV444toRGB888(y, u, v);
     */
       for (x = 0; x < myDecoder.decoderFrameWidth; x++) {
         for (y = 0; y < myDecoder.decoderFrameHeight; y++) {
-          index = startIndex(x, y, myDecoder.decoderFrameWidth, myDecoder.decoderFrameHeight);
+          index = this.rgbaStartIndex(x, y, myDecoder.decoderFrameWidth, myDecoder.decoderFrameHeight);
           total = myDecoder.decoderFrameWidth * myDecoder.decoderFrameHeight * 4;
           myDecoder.decoderRgbaArray[index] = 0;
           // green
@@ -100,20 +96,20 @@ rgb = Y'UV444toRGB888(y, u, v);
     function blackBox(posX, posY, rgbaArray, width, height) {
       for (x = 0; x < 10; x++) {
         y = 0;
-        index = startIndex((posX + x), (posY + y), width, height);
+        index = this.rgbaStartIndex((posX + x), (posY + y), width, height);
         rgbaArray[index + 0] = 0;
         rgbaArray[index + 1] = 0;
         rgbaArray[index + 2] = 0;
         rgbaArray[index + 3] = 255;
         y = 1;
-        index = startIndex((posX + x), (posY + y), width, height);
+        index = this.rgbaStartIndex((posX + x), (posY + y), width, height);
         rgbaArray[index + 0] = 0;
         rgbaArray[index + 1] = 0;
         rgbaArray[index + 2] = 0;
         rgbaArray[index + 3] = 255;
         if (x === 0 || x === 1 || x === 8 || x === 9) {
           for (y = 2; y < 8; y++) {
-            index = startIndex((posX + x), (posY + y), width, height);
+            index = this.rgbaStartIndex((posX + x), (posY + y), width, height);
             rgbaArray[index + 0] = 0;
             rgbaArray[index + 1] = 0;
             rgbaArray[index + 2] = 0;
@@ -121,13 +117,13 @@ rgb = Y'UV444toRGB888(y, u, v);
           }
         }
         y = 8;
-        index = startIndex((posX + x), (posY + y), width, height);
+        index = this.rgbaStartIndex((posX + x), (posY + y), width, height);
         rgbaArray[index + 0] = 0;
         rgbaArray[index + 1] = 0;
         rgbaArray[index + 2] = 0;
         rgbaArray[index + 3] = 255;
         y = 9;
-        index = startIndex((posX + x), (posY + y), width, height);
+        index = this.rgbaStartIndex((posX + x), (posY + y), width, height);
         rgbaArray[index + 0] = 0;
         rgbaArray[index + 1] = 0;
         rgbaArray[index + 2] = 0;
@@ -143,7 +139,7 @@ rgb = Y'UV444toRGB888(y, u, v);
   			g = 0;
   			b = (255.0 * y) / height;
   			alpha = 255;
-  			index = startIndex(x, y, width, height);
+  			index = this.rgbaStartIndex(x, y, width, height);
   			rgbaArray[index + 0] = Math.min(255, r);
   			rgbaArray[index + 1] = Math.min(255, g);
   			rgbaArray[index + 2] = Math.min(255, b);
@@ -158,3 +154,9 @@ rgb = Y'UV444toRGB888(y, u, v);
   	blackBox(posX, posY, rgbaArray, width, height);
   }
 }
+
+
+Decoder.prototype.rgbaStartIndex = function (x, y, width, height) {
+    return (x + (y * width)) * 4;
+  }
+
