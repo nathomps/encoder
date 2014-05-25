@@ -5,30 +5,39 @@
 
 <body>
 <div id="canvas"></div>
-<div id="fileHolder"></div>
+<div id="fileSelector"></div>
 
 <script language=JavaScript>
-var decoder = new Decoder();
+var decoder = undefined;
+
+/**
+ * Set up the canvas for drawing.
+ */
 var canvas = document.getElementById('canvas');
 if (canvas) {
-  canvas.innerHTML="<canvas id='pixelsCanvas' width='"+decoder.decoderFrameWidth+"' height='"+decoder.decoderFrameHeight+"' style='border:1px solid #d3d3d3;'>Your browser does not support HTML5 Canvas.</canvas>";
+  canvas.innerHTML="<canvas id='pixelsCanvas' width='"+Decoder.prototype.decoderFrameWidth+"' height='"+Decoder.prototype.decoderFrameHeight+"' style='border:1px solid #d3d3d3;'>Your browser does not support HTML5 Canvas.</canvas>";
 }
+var canvasContext = document.getElementById("pixelsCanvas").getContext("2d");
 
-var fileHolder = document.getElementById('fileHolder');
+/**
+ * Setup the file selector.
+ */
+var fileSelector = document.getElementById('fileSelector');
 // Check for the various File API support.
-if (fileHolder) {
+if (fileSelector) {
   if (window.File &&
       window.FileReader &&
       window.FileList &&
       window.Blob) {
-    fileHolder.innerHTML = '<input type="file" id="fileSelector" name="video_source" />';
+    fileSelector.innerHTML = '<input type="file" id="fileSelector" name="video_source" />';
 
   } else {
-    fileHolder.style['display'] = 'block';
-    fileHolder.innerHTML = '<p>Browser Does Not Support HTML5 File API</p>';
+    fileSelector.style['display'] = 'block';
+    fileSelector.innerHTML = '<p>Browser Does Not Support HTML5 File API</p>';
   }
 }
 
+/*
 function copyFromDecoder(myCanvasContext, myDecoder) {
   var imageData = myCanvasContext.createImageData(myDecoder.decoderFrameWidth, myDecoder.decoderFrameHeight);
   console.log("0",myDecoder.decoderRgbaArray[0]);
@@ -40,34 +49,37 @@ function copyFromDecoder(myCanvasContext, myDecoder) {
   }
   myCanvasContext.putImageData(imageData, 0, 0);
 }
-
-var canvas = document.getElementById("pixelsCanvas");
-var canvasContext = canvas.getContext("2d");
 copyFromDecoder(canvasContext, decoder);
+*/
 
-var handleFileSelect = function() {
-    var localContext = canvasContext;
-    var localDecoder = decoder;
 
+/**
+ * Handle file selection.
+ */
+var handleFileSelect = function(canvasContext) {
   return function(evt) {
-    var files = evt.target.files;
-    for (var i = 0; i < files.length; i++) {
-    	localDecoder.decode(files[i]);
-      copyFromDecoder(localContext, localDecoder);
-    }
+    var files = evt.target.files; // list of File objects
+    // we only care about one file
+    var file = files[0];
+    decoder = new Decoder(file);
   }
-}();
+}(canvasContext, decoder);
 
-var handleMouseUp = function(canvasContext, decoder) {
+document.getElementById('fileSelector').addEventListener('change', handleFileSelect, false);
+
+/**
+ * Updates the canvas to switch rgb color.
+ */
+var handleMouseUp = function(canvasContext) {
   var localContext = canvasContext;
-  var width = decoder.decoderFrameWidth;
-  var height = decoder.decoderFrameHeight;
+  var width = Decoder.prototype.decoderFrameWidth;
+  var height = Decoder.prototype.decoderFrameHeight;
   var color = 0;
   return function (evt) {
     var imageData = localContext.createImageData(width, height);
     for (var x = 0; x < width; x++) {
       for (var y = 0; y < height; y++) {
-        var index = decoder.rgbaStartIndex(x, y, width, height);
+        var index = Decoder.prototype.rgbaStartIndex(x, y, width, height);
         //var index = (x + (y * width)) * 4;
         imageData.data[index + 0] = 0;
         imageData.data[index + 1] = 0;
@@ -76,15 +88,16 @@ var handleMouseUp = function(canvasContext, decoder) {
         imageData.data[index + (color % 3)] = 255;
       }
     }
-    console.log("mouse up");
     color++;
+
+    if (decoder !== undefined) {
+      decoder.decodeFrame(imageData.data);
+    }
     localContext.putImageData(imageData, 0, 0);
   }
 }(canvasContext, decoder);
-
 document.onmouseup = handleMouseUp;
 
-document.getElementById('fileSelector').addEventListener('change', handleFileSelect, false);
 
 </script>
 

@@ -1,22 +1,6 @@
-var Decoder = function Decoder() {
-  this.decoderFrameWidth = 352;
-  this.decoderFrameHeight = 288;
-
-  // width * height * (r,g,b,alpha)
-  this.decoderRgbaArray = new Array(this.decoderFrameWidth * this.decoderFrameHeight * 4);
-  for (x = 0; x < this.decoderFrameWidth; x++) {
-    for (y = 0; y < this.decoderFrameHeight; y++) {
-      index = this.rgbaStartIndex(x, y, this.decoderFrameWidth, this.decoderFrameHeight);
-      total = this.decoderFrameWidth * this.decoderFrameHeight * 4;
-      this.decoderRgbaArray[index] = 255;
-      // green
-      this.decoderRgbaArray[index + 1] = 0;
-      // blue
-      this.decoderRgbaArray[index + 2] = 0;
-      // alpha
-      this.decoderRgbaArray[index + 3] = 255;//Math.floor(255 * (index / total));
-    }
-  }
+var Decoder = function Decoder(_file) {
+  this.file = _file;
+  this.frameCount = 0;
 
   function yuvToRGB() {
 /*
@@ -27,15 +11,67 @@ v = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total + (s
 rgb = Y'UV444toRGB888(y, u, v);
 */
   }
+}
 
-  this.decode = function(file) {
-    function frameByteCountYUV420(frameWidth, frameHeight) {
-      //var frameByteCount = frameWidth * frameHeight * 12;
-      // 1 byte variance for every pixel, 1 byte color for every four pixels
-      var yCount = frameWidth * frameHeight;
-      var uCount = yCount / 4;
-      var vCount = yCount / 4;
-      return yCount + uCount + vCount;
+Decoder.prototype.decoderFrameWidth = 352;
+Decoder.prototype.decoderFrameHeight = 288;
+
+/**
+ * Gets the index into the Javascript rgba array based on the current x,y
+ * position and frame width/height.
+ */
+Decoder.prototype.rgbaStartIndex = function (x, y, width, height) {
+  return (x + (y * width)) * 4;
+}
+
+/**
+ * Helper function to compute the byte count for a frame of given width/height
+ * in YUV420 format.
+ */
+Decoder.prototype.frameByteCountYUV420 = function(frameWidth, frameHeight) {
+  //var frameByteCount = frameWidth * frameHeight * 12;
+  // 1 byte variance for every pixel, 1 byte color for every four pixels
+  var yCount = frameWidth * frameHeight;
+  var uCount = yCount / 4;
+  var vCount = yCount / 4;
+  return yCount + uCount + vCount;
+}
+
+/**
+ * Reads the next frame from file and converts the contents into javascript rgba
+ * format.
+ */
+Decoder.prototype.decodeFrame = function(rgbaArray) {
+  console.log("decoding from ",this.file.name);
+  // try to read a blob
+  var frameSize = this.frameByteCountYUV420(this.decoderFrameWidth, this.decoderFrameHeight);
+  var blob = this.file.slice((this.frameCount * frameSize), frameSize);
+  var fileReader = new FileReader();
+  fileReader.onloadend = (function() {
+    return function(evt) {
+      if (evt.target.readyState === FileReader.DONE) {
+        var buffer = this.result;
+        console.log("result len=", buffer.length);
+      } else {
+        console.log("Got event", evt);
+      }
+    }
+  })();
+  fileReader.readAsBinaryString(blob);
+}
+
+Decoder.prototype.decode = function(fileReader, rgbaArray) {
+  for (x = 0; x < this.decoderFrameWidth; x++) {
+    for (y = 0; y < this.decoderFrameHeight; y++) {
+      index = this.rgbaStartIndex(x, y, this.decoderFrameWidth, this.decoderFrameHeight);
+      total = this.decoderFrameWidth * this.decoderFrameHeight * 4;
+      this.decoderRgbaArray[index] = Math.floor(255 * (index / total));
+      // green
+      this.decoderRgbaArray[index + 1] = 0;
+      // blue
+      this.decoderRgbaArray[index + 2] = 0;
+      // alpha
+      this.decoderRgbaArray[index + 3] = 255;
     }
   
     function drawFrame(myDecoder, frameBuffer) {
@@ -154,9 +190,4 @@ rgb = Y'UV444toRGB888(y, u, v);
   	blackBox(posX, posY, rgbaArray, width, height);
   }
 }
-
-
-Decoder.prototype.rgbaStartIndex = function (x, y, width, height) {
-    return (x + (y * width)) * 4;
-  }
 
