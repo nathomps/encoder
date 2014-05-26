@@ -1,18 +1,18 @@
+/**
+ * Constructor.
+ */
 var Decoder = function Decoder(_file) {
+  /**
+   * Instance member variables.
+   */
   this.file = _file;
   this.frameCount = 0;
-
-  function yuvToRGB() {
-/*
-size.total = size.width * size.height;
-y = yuv[position.y * size.width + position.x];
-u = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total];
-v = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total + (size.total / 4)];
-rgb = Y'UV444toRGB888(y, u, v);
-*/
-  }
+  this.ondecodeend = undefined;
 }
 
+/**
+ * Class member variables.
+ */
 Decoder.prototype.decoderFrameWidth = 352;
 Decoder.prototype.decoderFrameHeight = 288;
 
@@ -42,24 +42,120 @@ Decoder.prototype.frameByteCountYUV420 = function(frameWidth, frameHeight) {
  * format.
  */
 Decoder.prototype.decodeFrame = function(rgbaArray) {
-  console.log("decoding from ",this.file.name);
+  console.log("decoding from ", this.file.name);
   // try to read a blob
   var frameSize = this.frameByteCountYUV420(this.decoderFrameWidth, this.decoderFrameHeight);
-  var blob = this.file.slice((this.frameCount * frameSize), frameSize);
+  var startByte = this.frameCount * frameSize;
+  this.frameCount++;
+  var blob = this.file.slice(startByte, (startByte + frameSize));
+  console.log("bytes", startByte, (startByte + frameSize));
   var fileReader = new FileReader();
+  var that = this;
+
   fileReader.onloadend = (function() {
+    var output = rgbaArray;
     return function(evt) {
       if (evt.target.readyState === FileReader.DONE) {
         var buffer = this.result;
         console.log("result len=", buffer.length);
+        that.convertYUV420ToRGBA(buffer, output);
       } else {
         console.log("Got event", evt);
       }
     }
   })();
-  fileReader.readAsBinaryString(blob);
+  fileReader.readAsArrayBuffer(blob);
 }
 
+/**
+ * Decodes an yuv420 frame into the given rgbaArray.
+ */
+Decoder.prototype.convertYUV420ToRGBA = function(data, rgbaArray) {
+  /**
+   * clips the value to the range [0,255]
+   */
+  function clip(value) {
+    return Math.min(255, Math.max(0, value));
+  }
+
+  /**
+   * Upscales a 4:2:0 chroma array into a 4:4:4 chroma array.
+   */
+  function upscaleTo444(input, output) {
+    /*
+    http://msdn.microsoft.com/en-us/library/windows/desktop/dd206750(v=vs.85).aspx
+    Cout[0]     = Cin[0];
+    Cout[1]     = clip((9 * (Cin[0] + Cin[1]) - (Cin[0] + Cin[2]) + 8) >> 4);
+    Cout[2]     = Cin[1];
+    Cout[3]     = clip((9 * (Cin[1] + Cin[2]) - (Cin[0] + Cin[3]) + 8) >> 4);
+    Cout[4]     = Cin[2]
+    Cout[5]     = clip((9 * (Cin[2] + Cin[3]) - (Cin[1] + Cin[4]) + 8) >> 4);
+    ...
+    Cout[2*i]   = Cin[i]
+    Cout[2*i+1] = clip((9 * (Cin[i] + Cin[i+1]) - (Cin[i-1] + Cin[i+2]) + 8) >> 4);
+    ...
+    Cout[2*N-3] = clip((9 * (Cin[N-2] + Cin[N-1]) - (Cin[N-3] + Cin[N-1]) + 8) >> 4);
+    Cout[2*N-2] = Cin[N-1];
+    Cout[2*N-1] = clip((9 * (Cin[N-1] + Cin[N-1]) - (Cin[N-2] + Cin[N-1]) + 8) >> 4);
+    */
+
+    var croppedWidth = Decoder.prototype.decoderFrameWidth / 2;
+    var croppedHeight = Decoder.prototype.decoderFrameHeight / 2;
+    console.log("got ", input.length, " wanted ", (croppedWidth * croppedHeight));
+    for (var y = 0; y < croppedHeight; y++) {
+      var offset = y * croppedWidth;
+      var writeOffset = y * Decoder.prototype.decoderFrameWidth;
+      for (var x = 0; x < croppedWidth; x++) {
+        var readIndex = offset + x;
+        var writeIndex = writeOffset + (2 * x);
+        output[writeIndex] = input[readIndex];
+        output[writeIndex + Decoder.prototype.decoderFrameWidth] = input[readIndex];
+        output[writeIndex+1] = input[readIndex];
+        output[writeIndex + Decoder.prototype.decoderFrameWidth + 1] = input[readIndex];
+      }
+    }
+  }
+
+  var buffer = new Uint8Array(data);
+
+  // set up a 4:4:4 structure
+  var frameSize = this.decoderFrameHeight * this.decoderFrameWidth;
+  var uBuffer = new Array(frameSize);
+  upscaleTo444(buffer.subarray(frameSize, frameSize + (frameSize / 4)), uBuffer);
+  var vBuffer = new Array(frameSize);
+  upscaleTo444(buffer.subarray((frameSize + (frameSize / 4)), (frameSize + (frameSize / 2))), vBuffer);
+
+  // do the conversion from YUV 4:4:4 to RGB888 + Alpha
+  for (var y = 0; y < this.decoderFrameHeight; y++) {
+    var offset = y * this.decoderFrameHeight;
+    for (var x = 0; x < this.decoderFrameWidth; x++) {
+      var readIndex = offset + x;
+      var Y = buffer[readIndex];
+      var U = uBuffer[readIndex];
+      var V = vBuffer[readIndex];
+      // http://msdn.microsoft.com/en-us/library/windows/desktop/dd206750(v=vs.85).aspx
+      var C = Y - 16;
+      var D = 0;//U - 128;
+      var E = 0;//V - 128;
+      var writeIndex = this.rgbaStartIndex(x, y, this.decoderFrameWidth, this.decoderFrameHeight);
+      // r
+      rgbaArray[writeIndex + 0] = clip(Math.round(1.164383 * C + 1.596027 * E));
+      // g
+      rgbaArray[writeIndex + 1] = clip(Math.round(1.164383 * C - (0.391762 * D) - (0.812968 * E)));
+      // b
+      rgbaArray[writeIndex + 2] = clip(Math.round(1.164383 * C + 2.017232 * D));
+      // alpha
+      rgbaArray[writeIndex + 3] = 255;
+    }
+  }
+
+  if (this.ondecodeend) {
+    this.ondecodeend();
+  }
+
+}
+
+/*
 Decoder.prototype.decode = function(fileReader, rgbaArray) {
   for (x = 0; x < this.decoderFrameWidth; x++) {
     for (y = 0; y < this.decoderFrameHeight; y++) {
@@ -75,21 +171,6 @@ Decoder.prototype.decode = function(fileReader, rgbaArray) {
     }
   
     function drawFrame(myDecoder, frameBuffer) {
-    /*
-    first width*height bytes are the Y values.
-    next are the u values (1/4 of y values).
-    last are the v values (1/4 of y values).
-  // http://trace.eas.asu.edu/yuv/
-      //unsigned char luma[352][288];
-      //unsigned char cb[176][144];
-      //unsigned char cr[176][144];
-  
-    i = x * 352 + y;
-    pixel[i][r] = cr[floor(i/2)];
-    pixel[i][g] = 255 - (cr[floor(i/2)] + cb[floor(i/2)]);
-    pixel[i][b] = cb[floor(i/2)];
-    pixel[i][alpha] = luma[i];
-    */
       for (x = 0; x < myDecoder.decoderFrameWidth; x++) {
         for (y = 0; y < myDecoder.decoderFrameHeight; y++) {
           index = this.rgbaStartIndex(x, y, myDecoder.decoderFrameWidth, myDecoder.decoderFrameHeight);
@@ -190,4 +271,9 @@ Decoder.prototype.decode = function(fileReader, rgbaArray) {
   	blackBox(posX, posY, rgbaArray, width, height);
   }
 }
+*/
 
+
+if (typeof module != 'undefined') {
+  module.exports.Decoder = Decoder;
+}

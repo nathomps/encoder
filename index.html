@@ -37,22 +37,6 @@ if (fileSelector) {
   }
 }
 
-/*
-function copyFromDecoder(myCanvasContext, myDecoder) {
-  var imageData = myCanvasContext.createImageData(myDecoder.decoderFrameWidth, myDecoder.decoderFrameHeight);
-  console.log("0",myDecoder.decoderRgbaArray[0]);
-  console.log("1",myDecoder.decoderRgbaArray[1]);
-  console.log("2",myDecoder.decoderRgbaArray[2]);
-  console.log("3",myDecoder.decoderRgbaArray[3]);
-  for (var i = 0; i < myDecoder.decoderRgbaArray.length; i++) {
-    imageData.data[i] = myDecoder.decoderRgbaArray[i];
-  }
-  myCanvasContext.putImageData(imageData, 0, 0);
-}
-copyFromDecoder(canvasContext, decoder);
-*/
-
-
 /**
  * Handle file selection.
  */
@@ -68,7 +52,7 @@ var handleFileSelect = function(canvasContext) {
 document.getElementById('fileSelector').addEventListener('change', handleFileSelect, false);
 
 /**
- * Updates the canvas to switch rgb color.
+ * Decodes the next frame on each mouse click.
  */
 var handleMouseUp = function(canvasContext) {
   var localContext = canvasContext;
@@ -77,27 +61,17 @@ var handleMouseUp = function(canvasContext) {
   var color = 0;
   return function (evt) {
     var imageData = localContext.createImageData(width, height);
-    for (var x = 0; x < width; x++) {
-      for (var y = 0; y < height; y++) {
-        var index = Decoder.prototype.rgbaStartIndex(x, y, width, height);
-        //var index = (x + (y * width)) * 4;
-        imageData.data[index + 0] = 0;
-        imageData.data[index + 1] = 0;
-        imageData.data[index + 2] = 0;
-        imageData.data[index + 3] = 255;
-        imageData.data[index + (color % 3)] = 255;
-      }
-    }
-    color++;
-
     if (decoder !== undefined) {
+      decoder.ondecodeend = (function(canvasContext, imageData) {
+        return function() {
+          localContext.putImageData(imageData, 0, 0);
+        }
+      })(localContext, imageData);
       decoder.decodeFrame(imageData.data);
     }
-    localContext.putImageData(imageData, 0, 0);
   }
 }(canvasContext, decoder);
 document.onmouseup = handleMouseUp;
-
 
 </script>
 
