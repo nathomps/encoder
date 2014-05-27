@@ -6,6 +6,9 @@ var Decoder = function Decoder(_file) {
    * Instance member variables.
    */
   this.file = _file;
+  if (this.file) {
+    console.log("Decoding %d bytes from %s", this.file.size, this.file.name);
+  }
   this.frameCount = 0;
   this.ondecodeend = undefined;
 }
@@ -42,7 +45,20 @@ Decoder.prototype.frameByteCountYUV420 = function(frameWidth, frameHeight) {
  * format.
  */
 Decoder.prototype.decodeFrame = function(rgbaArray) {
-  console.log("decoding from ", this.file.name);
+  /*
+  var callback = (function(buffer) {
+    var output = rgbaArray;
+    that.convertYUV420ToRGBA(buffer, output);
+  }
+  this.readNextFrame(callback);
+  */
+}
+
+/**
+ * reads the next frame from this Decoder's file.
+ * Passes an ArrayBuffer to callback.
+ */
+Decoder.prototype.readNextFrame = function(callback) {
   // try to read a blob
   var frameSize = this.frameByteCountYUV420(this.decoderFrameWidth, this.decoderFrameHeight);
   var startByte = this.frameCount * frameSize;
@@ -53,17 +69,18 @@ Decoder.prototype.decodeFrame = function(rgbaArray) {
   var that = this;
 
   fileReader.onloadend = (function() {
-    var output = rgbaArray;
+    var callbackFn = callback;
     return function(evt) {
       if (evt.target.readyState === FileReader.DONE) {
         var buffer = this.result;
         console.log("result len=", buffer.length);
-        that.convertYUV420ToRGBA(buffer, output);
+        callbackFn(buffer);
       } else {
         console.log("Got event", evt);
       }
     }
   })();
+
   fileReader.readAsArrayBuffer(blob);
 }
 
@@ -119,26 +136,31 @@ Decoder.prototype.convertYUV420ToRGBA = function(data, rgbaArray) {
   var buffer = new Uint8Array(data);
 
   // set up a 4:4:4 structure
+  /*
   var frameSize = this.decoderFrameHeight * this.decoderFrameWidth;
   var uBuffer = new Array(frameSize);
   upscaleTo444(buffer.subarray(frameSize, frameSize + (frameSize / 4)), uBuffer);
   var vBuffer = new Array(frameSize);
   upscaleTo444(buffer.subarray((frameSize + (frameSize / 4)), (frameSize + (frameSize / 2))), vBuffer);
+  */
 
   // do the conversion from YUV 4:4:4 to RGB888 + Alpha
   for (var y = 0; y < this.decoderFrameHeight; y++) {
     var offset = y * this.decoderFrameHeight;
     for (var x = 0; x < this.decoderFrameWidth; x++) {
       var readIndex = offset + x;
+      // 16 = black and 235 = white
       var Y = buffer[readIndex];
-      var U = uBuffer[readIndex];
-      var V = vBuffer[readIndex];
+      // 16 = black and 240 = white
+      var U = 128; //uBuffer[readIndex];
+      var V = 128; //vBuffer[readIndex];
       // http://msdn.microsoft.com/en-us/library/windows/desktop/dd206750(v=vs.85).aspx
       var C = Y - 16;
-      var D = 0;//U - 128;
-      var E = 0;//V - 128;
+      var D = U - 128;
+      var E = V - 128;
       var writeIndex = this.rgbaStartIndex(x, y, this.decoderFrameWidth, this.decoderFrameHeight);
       // r
+      // TODO: use uint8ClampedArray to avoid clip
       rgbaArray[writeIndex + 0] = clip(Math.round(1.164383 * C + 1.596027 * E));
       // g
       rgbaArray[writeIndex + 1] = clip(Math.round(1.164383 * C - (0.391762 * D) - (0.812968 * E)));
