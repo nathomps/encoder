@@ -93,23 +93,71 @@ describe('Decoder', function(){
     beforeEach(function(){
       var fileConfig = {
         name:   "test_file",
-        buffer: bytes.buffer,
-        size:   bytes.length
+        buffer: bytes,
       };
       var file = new FileAPI.File(fileConfig);
-      FileAPI.File.prototype.slice = function() {
-      }
+      // hack to work around lack of Blob support in file-api node package
+      FileAPI.File.prototype.slice = (function(buffer) {
+        var origBuffer = buffer;
+        return function(/* start, end, contentType */) {
+          // http://www.w3.org/TR/FileAPI/#slice-method-algo
+          var relativeStart = 0;
+          if (arguments.length > 0) {
+            var start = arguments[0];
+            if (start < 0) {
+              relativeStart = Math.max((origBuffer.length + start), 0);
+            } else if (start > 0) {
+              relativeStart = Math.min(start, origBuffer.length);
+            }
+          }
+
+          var relativeEnd = origBuffer.length;
+          if (arguments.length > 1) {
+            var end = arguments[1];
+            if (end < 0) {
+              relativeEnd = Math.max((origBuffer.length + end), 0);
+            } else if (end > 0) {
+              relativeEnd = Math.min(end, origBuffer.length);
+            }
+          }
+
+          this.size = relativeEnd - relativeStart;
+          this.buffer = new Uint8Array(this.size);
+          for (var i = 0; i < this.size; i++) {
+            this.buffer[i] = origBuffer[i + relativeStart];
+          }
+          return this;
+        }
+      })(bytes);
+
       decoder = new Decoder(file);
     });
 
-    it('should read correct bytes', function(output){
+    it('should read correct first frame', function(output){
       var callback = function(buffer) {
         var byteArray = new Uint8Array(buffer);
-        for (var i = 0; i < BUFFER_SIZE; i++) {
+        var frameSize = (Decoder.prototype.decoderFrameWidth * Decoder.prototype.decoderFrameHeight) * 1.5;
+        byteArray.length.should.equal(frameSize);
+        for (var i = 0; i < frameSize; i++) {
           byteArray[i].should.equal(i);
         }
       };
       decoder.readNextFrame(callback);
     });
+
+    it('should read correct second frame', function(output){
+      var skip = function() {}
+      var callback = function(buffer) {
+        var byteArray = new Uint8Array(buffer);
+        var frameSize = (Decoder.prototype.decoderFrameWidth * Decoder.prototype.decoderFrameHeight) * 1.5;
+        byteArray.length.should.equal(frameSize);
+        for (var i = 0; i < frameSize; i++) {
+          byteArray[i].should.equal(frameSize + i);
+        }
+      };
+      decoder.readNextFrame(skip);
+      decoder.readNextFrame(callback);
+    });
+
   });
 });

@@ -1,3 +1,8 @@
+if (typeof module != 'undefined') {
+  var FileAPI = require('file-api');
+  var FileReader = FileAPI.FileReader;
+}
+
 /**
  * Constructor.
  */
@@ -64,22 +69,21 @@ Decoder.prototype.readNextFrame = function(callback) {
   var startByte = this.frameCount * frameSize;
   this.frameCount++;
   var blob = this.file.slice(startByte, (startByte + frameSize));
-  console.log("bytes", startByte, (startByte + frameSize));
   var fileReader = new FileReader();
   var that = this;
 
-  fileReader.onloadend = (function() {
+  fileReader.onloadend = (function(reader) {
+    var myReader = reader;
     var callbackFn = callback;
     return function(evt) {
-      if (evt.target.readyState === FileReader.DONE) {
-        var buffer = this.result;
-        console.log("result len=", buffer.length);
+      if (myReader.readyState === myReader.DONE) {
+        var buffer = myReader.result;
         callbackFn(buffer);
       } else {
-        console.log("Got event", evt);
+        console.log("FileReader state =", myReader.readyState,"vs",myReader.DONE);
       }
     }
-  })();
+  })(fileReader);
 
   fileReader.readAsArrayBuffer(blob);
 }
