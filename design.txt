@@ -1,5 +1,11 @@
 Sources:
+PAL:
 http://trace.eas.asu.edu/yuv/
+
+YUV4MPEG:
+https://media.xiph.org/video/derf/
+
+
 http://msdn.microsoft.com/en-us/library/windows/desktop/dd206750(v=vs.85).aspx
 
 1. test redrawing on canvas (onmouseclick?)

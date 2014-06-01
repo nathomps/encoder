@@ -21,8 +21,14 @@ var Decoder = function Decoder(_file) {
 /**
  * Class member variables.
  */
-Decoder.prototype.decoderFrameWidth = 352;
-Decoder.prototype.decoderFrameHeight = 288;
+/**
+ * QCIF = 176 × 144
+ * CIF = 352 × 288
+ * SIF = 352 x 240
+ */
+Decoder.prototype.decoderFrameWidth = 176;
+Decoder.prototype.decoderFrameHeight = 144;
+
 
 /**
  * Gets the index into the Javascript rgba array based on the current x,y
@@ -37,7 +43,12 @@ Decoder.prototype.rgbaStartIndex = function (x, y, width, height) {
  * in YUV420 format.
  */
 Decoder.prototype.frameByteCountYUV420 = function(frameWidth, frameHeight) {
-  //var frameByteCount = frameWidth * frameHeight * 12;
+  if (frameWidth < 2) {
+    throw RangeError("width too small");
+  } else if (frameHeight < 2) {
+    throw RangeError("width too small");
+  }
+
   // 1 byte variance for every pixel, 1 byte color for every four pixels
   var yCount = frameWidth * frameHeight;
   var uCount = yCount / 4;
@@ -50,13 +61,17 @@ Decoder.prototype.frameByteCountYUV420 = function(frameWidth, frameHeight) {
  * format.
  */
 Decoder.prototype.decodeFrame = function(rgbaArray) {
-  /*
-  var callback = (function(buffer) {
+  var callback = (function(that, rgbaArray) {
     var output = rgbaArray;
-    that.convertYUV420ToRGBA(buffer, output);
-  }
+    var self = that;
+    return function(buffer) {
+      self.convertYUV420ToRGBA(buffer, output);
+      if (self.ondecodeend) {
+        self.ondecodeend();
+      }
+    }
+  })(this, rgbaArray);
   this.readNextFrame(callback);
-  */
 }
 
 /**
@@ -147,6 +162,7 @@ Decoder.prototype.convertYUV420ToRGBA = function(data, rgbaArray) {
   var vBuffer = new Array(frameSize);
   upscaleTo444(buffer.subarray((frameSize + (frameSize / 4)), (frameSize + (frameSize / 2))), vBuffer);
   */
+  console.log("converting",buffer.length,"bytes");
 
   // do the conversion from YUV 4:4:4 to RGB888 + Alpha
   for (var y = 0; y < this.decoderFrameHeight; y++) {
@@ -174,11 +190,6 @@ Decoder.prototype.convertYUV420ToRGBA = function(data, rgbaArray) {
       rgbaArray[writeIndex + 3] = 255;
     }
   }
-
-  if (this.ondecodeend) {
-    this.ondecodeend();
-  }
-
 }
 
 /*

@@ -55,22 +55,26 @@ document.getElementById('fileSelector').addEventListener('change', handleFileSel
  * Decodes the next frame on each mouse click.
  */
 var handleMouseUp = function(canvasContext) {
-  var localContext = canvasContext;
   var width = Decoder.prototype.decoderFrameWidth;
   var height = Decoder.prototype.decoderFrameHeight;
   var color = 0;
+  console.log(decoder);
+  
   return function (evt) {
-    var imageData = localContext.createImageData(width, height);
+    var imageData = canvasContext.createImageData(width, height);
+    // use the global decoder
     if (decoder !== undefined) {
       decoder.ondecodeend = (function(canvasContext, imageData) {
         return function() {
-          localContext.putImageData(imageData, 0, 0);
+          canvasContext.putImageData(imageData, 0, 0);
         }
-      })(localContext, imageData);
+      })(canvasContext, imageData);
       decoder.decodeFrame(imageData.data);
+    } else {
+    	console.log("No decoder!!");
     }
   }
-}(canvasContext, decoder);
+}(canvasContext);
 document.onmouseup = handleMouseUp;
 
 </script>
