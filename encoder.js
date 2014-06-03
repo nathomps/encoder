@@ -6,7 +6,7 @@ if (typeof module != 'undefined') {
 /**
  * Constructor.
  */
-var Decoder = function Decoder(_file) {
+function Decoder(_file) {
   /**
    * Instance member variables.
    */
