@@ -11,10 +11,17 @@ describe('YUV4MPEG2Header', function(){
   });
 
   describe('#parseFromString', function(){
+      var fullString = 'YUV4MPEG2 W352 H240 F30000:1001 Ip A4320:4739\nFRAME\n! !""! !"!!!!!!!"! """';
     it('should parse width', function(){
-      var string = 'YUV4MPEG2 W352 H240 F30000:1001 Ip A4320:4739\nFRAME\n! !""! !"!!!!!!!"! """';
+      var string = 'YUV4MPEG2 W352\n';
       header.parseFromString(string);
       header.frameWidth.should.equal(352);
+    });
+
+    it('should parse height', function(){
+      var string = 'YUV4MPEG2 H240\n';
+      header.parseFromString(string);
+      header.frameHeight.should.equal(240);
     });
 
     it('should throw type error for invalid string', function(){

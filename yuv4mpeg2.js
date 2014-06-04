@@ -37,8 +37,9 @@ YUV4MPEG2Header.prototype.parseFromString = function(string) {
     // width = 'W'
     if (fields[i].indexOf('W') == 0) {
       this.frameWidth = parseInt(fields[i].substring(1, fields[i].length));
+    } else if (fields[i].indexOf('H') == 0) {
+      this.frameHeight = parseInt(fields[i].substring(1, fields[i].length));
     }
-    console.log("field",fields[i]);
   }
 }
 
