@@ -112,7 +112,7 @@ describe('Decoder', function(){
       decoder = new Decoder(file);
     });
 
-    it('should read correct first frame', function(output){
+    it('should read correct first frame', function(done){
       var frameSize = Decoder.prototype.frameByteCountYUV420(Decoder.prototype.decoderFrameWidth, Decoder.prototype.decoderFrameHeight);
       var callback = (function(frameSize) {
         return function(buffer) {
@@ -121,12 +121,13 @@ describe('Decoder', function(){
           for (var i = 0; i < frameSize; i++) {
             byteArray[i].should.equal(i);
           }
+          done();
         };
       })(frameSize);
       decoder.readNextFrame(callback);
     });
 
-    it('should read correct second frame', function(output){
+    it('should read correct second frame', function(done){
       var skip = function() {}
       var callback = function(buffer) {
         var byteArray = new Uint8Array(buffer);
@@ -135,6 +136,7 @@ describe('Decoder', function(){
         for (var i = 0; i < frameSize; i++) {
           byteArray[i].should.equal(frameSize + i);
         }
+        done();
       };
       decoder.readNextFrame(skip);
       decoder.readNextFrame(callback);

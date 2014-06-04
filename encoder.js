@@ -12,7 +12,7 @@ function Decoder(_file) {
    */
   this.file = _file;
   if (this.file) {
-    console.log("Decoding %d bytes from %s", this.file.size, this.file.name);
+    //console.log("Decoding %d bytes from %s", this.file.size, this.file.name);
   }
   this.frameCount = 0;
   this.ondecodeend = undefined;
@@ -162,7 +162,6 @@ Decoder.prototype.convertYUV420ToRGBA = function(data, rgbaArray) {
   var vBuffer = new Array(frameSize);
   upscaleTo444(buffer.subarray((frameSize + (frameSize / 4)), (frameSize + (frameSize / 2))), vBuffer);
   */
-  console.log("converting",buffer.length,"bytes");
 
   // do the conversion from YUV 4:4:4 to RGB888 + Alpha
   for (var y = 0; y < this.decoderFrameHeight; y++) {
