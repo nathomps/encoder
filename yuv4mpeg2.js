@@ -43,6 +43,7 @@ YUV4MPEG2Header.prototype.parseFromString = function(string) {
   }
 }
 
+
 /**
  * Parses the yuv4mpeg2 header and setting internal fields that are present in
  * the header.
@@ -59,6 +60,25 @@ YUV4MPEG2Header.prototype.parseFromFile = function(file, onparsedone) {
   fileReader.readAsText(file.slice(0, this.BUFFER_LENGTH));
 }
 
+function YUV4MPEG2() {
+}
+
+/**
+ * Determines the offset of frame data in the given string.
+ */
+YUV4MPEG2.prototype.getFrameStartIndex = function(string) {
+  if (string.indexOf("FRAME") < 0) {
+    throw TypeError("frame header missing");
+  }
+  var newline = string.indexOf('\n');
+  if (newline < 0) {
+    throw TypeError("newline missing");
+  }
+
+  return newline + 1;
+}
+
 if (typeof module != 'undefined') {
   module.exports.YUV4MPEG2Header = YUV4MPEG2Header;
+  module.exports.YUV4MPEG2 = YUV4MPEG2;
 }

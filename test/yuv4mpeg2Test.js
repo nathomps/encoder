@@ -1,13 +1,13 @@
 var should = require('should');
 var FileAPI = require('file-api');
 var FileReader = FileAPI.FileReader;
-var YUV4MPEG2Header = require(__dirname + '/../yuv4mpeg2.js').YUV4MPEG2Header;
+var YUV4MPEG2API = require(__dirname + '/../yuv4mpeg2.js');
 //var MakeSlice = require(__dirname + '/slice.js').makeSlice;
 
 describe('YUV4MPEG2Header', function(){
   var header = undefined;
   beforeEach(function(){
-    header = new YUV4MPEG2Header();
+    header = new YUV4MPEG2API.YUV4MPEG2Header();
   });
 
   describe('#parseFromString', function(){
@@ -30,6 +30,22 @@ describe('YUV4MPEG2Header', function(){
 
     it('should throw range error for incomplete string', function(){
       (function(){ header.parseFromString("YUV4MPEG2 W352"); }).should.throw();
+    });
+  });
+});
+
+describe('YUV4MPEG2', function(){
+  describe('#getFrameStartIndex', function(){
+    it('should throw if frame tag missing', function(){
+      (function(){ YUV4MPEG2API.YUV4MPEG2.prototype.getFrameStartIndex('\n! !""! !"!!!!!!!"! """'); }).should.throw();
+    });
+
+    it('should throw if newline missing', function(){
+      (function() { YUV4MPEG2API.YUV4MPEG2.prototype.getFrameStartIndex('FRAME'); }).should.throw();
+    });
+
+    it('should return index after newline', function(){
+      YUV4MPEG2API.YUV4MPEG2.prototype.getFrameStartIndex('FRAME\n! !""! !"!!!!!!!"! """').should.equal(6);
     });
   });
 });
