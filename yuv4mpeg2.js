@@ -60,11 +60,37 @@ YUV4MPEG2Header.prototype.parseFromFile = function(file, onparsedone) {
   fileReader.readAsText(file.slice(0, this.BUFFER_LENGTH));
 }
 
-function YUV4MPEG2() {
+
+
+
+
+
+
+
+
+
+
+/**
+ * Create a YUV4MPEG2 wrapper.
+ *
+ * @param file The file to read out YUV4MPEG2 content.
+ * @throws If the YUV4MPEG2 header is missing.
+ */
+function YUV4MPEG2(_file) {
+  this.file = new FileReader();
+  this.header = undefined;
+  this.headOffset = 0;
 }
+
+//YUV4MPEG2Header.prototype.parseFromFile = function(file, onparsedone) {
+
+YUV4MPEG2.prototype.BUFFER_SIZE = 256;
 
 /**
  * Determines the offset of frame data in the given string.
+
+ * @throws RangeError if the string does not contain the full frame header.
+ * @throws TypeError if the string does not look like a yuv4mpeg2 frame.
  */
 YUV4MPEG2.prototype.getFrameStartIndex = function(string) {
   if (string.indexOf("FRAME") < 0) {
@@ -72,11 +98,35 @@ YUV4MPEG2.prototype.getFrameStartIndex = function(string) {
   }
   var newline = string.indexOf('\n');
   if (newline < 0) {
-    throw TypeError("newline missing");
+    throw RangeError("newline missing");
   }
 
   return newline + 1;
 }
+
+YUV4MPEG2.prototype.readNextFrame = function(onreaddone) {
+  onreaddone([]);
+  /*
+  this.file.slice(this.headOffset, this.BUFFER_SIZE, function() {
+  yuv4=this; callback=onreaddone; return this.headerCallback();}());
+  */
+}
+
+/*
+YUV4MPEG2.prototype.headerCallback = function(yuv4, onreaddone) {
+  try {
+    endIndex = yuv4.getFrameStartIndex(this.slice.buffer); // result from fileReader
+    yuv4.headerOffset += endIndex;
+    yuv4.fileReader.slice(yuv4.headerOffset, FRAME_SIZE, onreaddone);
+    yuv4.headerOffset += FRAME_SIZE;
+  } catch (RangeError) {
+    // try again wiht a bigger buffer, or just shift buffer and look for newline
+  } catch (TypeError te) {
+    // not sure what to do here?
+    throw te;
+  }
+}
+*/
 
 if (typeof module != 'undefined') {
   module.exports.YUV4MPEG2Header = YUV4MPEG2Header;
